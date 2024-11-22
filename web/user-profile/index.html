@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Ticket Information</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+
+        h2 {
+            margin-top: 0;
+        }
+
+        .section {
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .info-group {
+            margin-bottom: 10px;
+        }
+
+        .info-group label {
+            font-weight: bold;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            margin-top: 3px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .form-group button {
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .form-group button:hover {
+            background-color: #0056b3;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            padding: 10px;
+            border: 1px solid #ccc;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f9f9f9;
+        }
+
+        .log-table {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- Ticket Information Section -->
+    <div class="section">
+        <h2>Thông Tin Vé</h2>
+        <div class="info-group">
+            <label>Mã vé:</label> <span id="ticket-id">N/A</span>
+        </div>
+        <div class="info-group">
+            <label>ID Người Dùng:</label> <span id="user-id">N/A</span>
+        </div>
+        <div class="info-group">
+            <label>Ngày Bắt Đầu:</label> <span id="start-date">N/A</span>
+        </div>
+        <div class="info-group">
+            <label>Ngày Kết Thúc:</label> <span id="end-date">N/A</span>
+        </div>
+        <div class="info-group">
+            <label>Ngày Tạo:</label> <span id="created-at">N/A</span>
+        </div>
+    </div>
+
+    <!-- Ticket Renewal Form Section -->
+    <div class="section">
+        <h2>Gia Hạn Vé</h2>
+        <form id="renew-form">
+            <div class="form-group">
+                <label for="start-month">Ngày Bắt Đầu:</label>
+                <input type="date" id="start-month" name="start-month" required>
+            </div>
+            <div class="form-group">
+                <label for="end-month">Ngày Kết Thúc:</label>
+                <input type="date" id="end-month" name="end-month" required>
+            </div>
+            <div class="form-group">
+                <button type="submit">Gia Hạn</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- User Log History Section -->
+    <div class="section">
+        <h2>Lịch Sử Log Của Người Dùng</h2>
+        <table class="log-table">
+            <thead>
+            <tr>
+                <th>Mã Log</th>
+                <th>Thời Gian Check</th>
+                <th>Hành Động</th>
+            </tr>
+            </thead>
+            <tbody id="log-history-body">
+            <!-- Logs will be populated here -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // Get userId from sessionStorage
+    const userId = sessionStorage.getItem('selectedUserId');
+    if (!userId) {
+        alert('No user ID found. Please select a user from the previous page.');
+    } else {
+        fetch(`http://127.0.0.1:8000/ticket/${userId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to fetch ticket data');
+                }
+                return response.json();
+            })
+            .then(ticketData => {
+                // Populate ticket information
+                document.getElementById("ticket-id").textContent = ticketData.ticket_id || 'N/A';
+                document.getElementById("user-id").textContent = ticketData.user_id || 'N/A';
+
+                // Format start date
+                const startDate = new Date(ticketData.start_date);
+                const formattedStartDate = new Intl.DateTimeFormat('vi-VN', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric'
+                }).format(startDate).replace('thg', 'tháng'); // Replace "thg" with "tháng" if needed
+                document.getElementById("start-date").textContent = formattedStartDate || 'N/A';
+
+                // Format end date
+                const endDate = new Date(ticketData.end_date);
+                const formattedEndDate = new Intl.DateTimeFormat('vi-VN', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric'
+                }).format(endDate).replace('thg', 'tháng'); // Replace "thg" with "tháng" if needed
+                document.getElementById("end-date").textContent = formattedEndDate || 'N/A';
+
+                // Format created date
+                const createdAt = new Date(ticketData.created_at);
+                const formattedCreatedAt = new Intl.DateTimeFormat('vi-VN', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric'
+                }).format(createdAt).replace('thg', 'tháng'); // Replace "thg" with "tháng" if needed
+                document.getElementById("created-at").textContent = formattedCreatedAt || 'N/A';
+            })
+            .catch(error => {
+                console.error('Error fetching ticket data:', error);
+                alert('Unable to load ticket data.');
+            });
+
+
+        fetch(`http://127.0.0.1:8000/check_in_out/get_logs_by_user_id/${userId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to fetch log history');
+                }
+                return response.json();
+            })
+            .then(logData => {
+                const logHistoryBody = document.getElementById("log-history-body");
+                logData.forEach(log => {
+                    const row = document.createElement("tr");
+                    const logIdCell = document.createElement("td");
+                    logIdCell.textContent = log.log_id;
+
+                    const checkTimeCell = document.createElement("td");
+                    const date = new Date(log.check_time);
+                    const formattedDate = new Intl.DateTimeFormat('vi-VN', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric'
+                    }).format(date).replace('thg', 'tháng'); // Replace "thg" with "tháng" if needed
+
+                    checkTimeCell.textContent = formattedDate;
+
+                    const actionCell = document.createElement("td");
+                    actionCell.textContent = log.action;
+
+                    row.appendChild(logIdCell);
+                    row.appendChild(checkTimeCell);
+                    row.appendChild(actionCell);
+
+                    logHistoryBody.appendChild(row);
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching log history:', error);
+                alert('Unable to load user log history.');
+            });
+
+
+        document.getElementById("renew-form").addEventListener("submit", function (event) {
+            event.preventDefault();
+            const startMonth = document.getElementById("start-month").value;
+            const endMonth = document.getElementById("end-month").value;
+
+            fetch(`http://127.0.0.1:8000/ticket/${userId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    start_month: startMonth,
+                    end_month: endMonth
+                })
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to renew ticket');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    alert('Gia hạn vé thành công!');
+
+                })
+                .catch(error => {
+                    console.error('Error renewing ticket:', error);
+                    alert('Failed to renew ticket.');
+                });
+        });
+    }
+</script>
+</body>
+</html>

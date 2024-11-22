@@ -1,0 +1,66 @@
+generator client {
+  provider = "prisma-client-py"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Users {
+  user_id      Int      @id @default(autoincrement())
+  full_name    String   @db.VarChar(50)
+  dob          DateTime
+  address      String   @db.VarChar(50)
+  face_data    Bytes
+  phone_number String   @db.VarChar(20)
+  created_at   DateTime @default(now())
+
+  // Quan hệ
+  ticket         Tickets?
+  checkInOutLogs CheckInOutLogs[]
+}
+
+model Tickets {
+  ticket_id  Int          @id @default(autoincrement())
+  user_id    Int          @unique
+  start_date DateTime?
+  end_date   DateTime?
+  created_at DateTime     @default(now())
+
+  // Quan hệ
+  user     Users      @relation(fields: [user_id], references: [user_id])
+  payments Payments[]
+}
+
+model Payments {
+  payment_id   Int      @id @default(autoincrement())
+  ticket_id    Int
+  amount       BigInt
+  payment_date DateTime @default(now())
+
+  // Quan hệ
+  ticket Tickets @relation(fields: [ticket_id], references: [ticket_id])
+}
+
+model CheckInOutLogs {
+  log_id     Int        @id @default(autoincrement())
+  user_id    Int
+  check_time DateTime   @default(now())
+  action     ActionType
+
+  // Quan hệ
+  user Users @relation(fields: [user_id], references: [user_id])
+}
+
+model Admins {
+  admin_id        Int      @id @default(autoincrement())
+  username        String   @unique
+  hashed_password String
+  created_at      DateTime @default(now())
+}
+
+enum ActionType {
+  CHECK_IN
+  CHECK_OUT
+}
